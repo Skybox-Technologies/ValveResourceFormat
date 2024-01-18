@@ -416,6 +416,11 @@ namespace ValveResourceFormat.IO
 
             if (skeletonNode != null)
             {
+                if (extras.HasValue)
+                {
+                    skeletonNode.Extras = extras.Value;
+                }
+
                 var animations = model.GetAllAnimations(FileLoader);
                 // Add animations
                 var frame = new Frame(model.Skeleton, model.FlexControllers);
@@ -669,16 +674,15 @@ namespace ValveResourceFormat.IO
             }
 
             var newNode = parentNode.CreateNode(name);
-            if (loadedMeshDictionary.TryGetValue(name, out var existingMesh))
+            var hasJoints = joints != null;
+            Mesh exportedMesh = null;
+            if (!loadedMeshDictionary.TryGetValue(name, out exportedMesh))
             {
-                // Make a new node that uses the existing mesh
-                newNode.Mesh = existingMesh;
-                return newNode;
+                // only create mesh if doesn't already exist
+                exportedMesh = CreateGltfMesh(name, mesh, exportedModel, hasJoints, skinMaterialPath, model, meshIndex);
+                loadedMeshDictionary.Add(name, exportedMesh);
             }
 
-            var hasJoints = joints != null;
-            var exportedMesh = CreateGltfMesh(name, mesh, exportedModel, hasJoints, skinMaterialPath, model, meshIndex);
-            loadedMeshDictionary.Add(name, exportedMesh);
             var hasVertexJoints = exportedMesh.Primitives.All(primitive => primitive.GetVertexAccessor("JOINTS_0") != null);
 
             if (!hasJoints || !hasVertexJoints)
